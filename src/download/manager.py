@@ -177,6 +177,17 @@ class DownloadManager:
                     "size_human": self._format_size(size)
                 })
 
+            # Trigger Nextcloud file scan
+            import subprocess
+            try:
+                subprocess.run(
+                    ["docker", "exec", "-u", "abc", "nextcloud-zvtygue4a9hhxtw13zvw18b7",
+                     "php", "/app/www/public/occ", "files:scan", "--all"],
+                    capture_output=True, timeout=30
+                )
+            except Exception:
+                pass
+
         except Exception as e:
             with self.lock:
                 self.jobs[job_id].update({
