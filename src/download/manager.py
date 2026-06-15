@@ -17,6 +17,11 @@ class DownloadManager:
         self.timeout = timeout
         self.jobs = {}
         self.lock = threading.Lock()
+        self.start_time = time.time()
+
+        # Cleanup thread for old jobs
+        cleanup_thread = threading.Thread(target=self._cleanup_loop, daemon=True)
+        cleanup_thread.start()
 
     def start(self, url, filename, folder=""):
         """Start a background download. Returns job_id."""
@@ -91,6 +96,38 @@ class DownloadManager:
                 self.jobs[job_id]["status"] = "cancelled"
                 return True
             return False
+
+    def get_stats(self):
+        """Get service statistics."""
+        with self.lock:
+            statuses = {}
+            for j in self.jobs.values():
+                s = j.get("status", "unknown")
+                statuses[s] = statuses.get(s, 0) + 1
+            return {
+                "total_jobs": len(self.jobs),
+                "by_status": statuses,
+                "uptime": int(time.time() - self.start_time),
+                "memory_mb": round(len(str(self.jobs)) / 1024 / 1024, 2)
+            }
+
+    def _cleanup_loop(self):
+        """Periodically clean up old completed jobs."""
+        while True:
+            time.sleep(3600)  # Run every hour
+            self._cleanup_old_jobs()
+
+    def _cleanup_old_jobs(self):
+        """Remove completed jobs older than 24 hours."""
+        cutoff = time.time() - 86400
+        with self.lock:
+            to_remove = []
+            for jid, j in self.jobs.items():
+                if j.get("status") in ("done", "error", "cancelled"):
+                    if j.get("created", 0) < cutoff:
+                        to_remove.append(jid)
+            for jid in to_remove:
+                del self.jobs[jid]
 
     def _format_size(self, b):
         if b < 1024: return f"{b} B"

@@ -1,7 +1,7 @@
-import os
-import time
 """API route handling - maps endpoints to actions."""
 
+import os
+import time
 import json
 from urllib.parse import urlparse, unquote
 
@@ -13,6 +13,7 @@ class APIRouter:
         self.auth = auth_handler
         self.dm = download_manager
         self.upload_dir = upload_dir
+        self.start_time = time.time()
 
     def handle(self, path, method, body, session):
         """Route request to handler. Returns (response_data, status_code)."""
@@ -25,6 +26,9 @@ class APIRouter:
         # Public endpoints
         if path == "/api/login":
             return self._login(body)
+
+        if path == "/api/health":
+            return self._health()
 
         # Protected endpoints
         if not session:
@@ -44,6 +48,17 @@ class APIRouter:
             return handler(body)
 
         return {"error": "Not found"}, 404
+
+    def _health(self):
+        """Health check endpoint."""
+        stats = self.dm.get_stats()
+        return {
+            "status": "ok",
+            "uptime": int(time.time() - self.start_time),
+            "jobs": stats["total_jobs"],
+            "active_downloads": stats["by_status"].get("downloading", 0),
+            "version": "1.0.0"
+        }, 200
 
     def _login(self, body):
         """Handle login."""

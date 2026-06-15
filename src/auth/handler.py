@@ -2,7 +2,7 @@
 
 import time
 import secrets
-from http.cookies import SimpleCookie
+import threading
 
 sessions = {}
 
@@ -22,13 +22,43 @@ def get_session(handler):
         if len(kv) == 2 and kv[0] == "session":
             token = kv[1]
             if token in sessions:
-                return sessions[token]
+                session = sessions[token]
+                # Check if session expired
+                if time.time() - session.get("created", 0) > 86400:
+                    del sessions[token]
+                    return None
+                return session
     return None
 
 
 def destroy_session(token):
     """Remove a session."""
     sessions.pop(token, None)
+
+
+def cleanup_sessions():
+    """Remove expired sessions."""
+    cutoff = time.time() - 86400
+    expired = [t for t, s in sessions.items() if s.get("created", 0) < cutoff]
+    for t in expired:
+        del sessions[t]
+
+
+class SessionCleanup(threading.Thread):
+    """Background thread to clean up expired sessions."""
+
+    def __init__(self):
+        super().__init__(daemon=True)
+        self.start()
+
+    def run(self):
+        while True:
+            time.sleep(3600)  # Run every hour
+            cleanup_sessions()
+
+
+# Start cleanup thread on import
+SessionCleanup()
 
 
 class AuthHandler:
