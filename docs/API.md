@@ -75,6 +75,21 @@ Content-Type: application/json
 Response: [{job}, ...]
 ```
 
+### Health Check
+```
+POST /api/health
+
+Response: {
+  "status": "ok",
+  "uptime": 3600,
+  "jobs": 5,
+  "active_downloads": 2,
+  "version": "1.0.0"
+}
+```
+
+No authentication required.
+
 ### Cancel Download
 ```
 POST /api/cancel

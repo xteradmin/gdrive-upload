@@ -77,6 +77,14 @@ src/
 5. Client includes cookie in all requests
 6. get_session() extracts token from cookie
 
+## Key Features
+
+- **Background Downloads** - Jobs run in threads, status tracked in memory
+- **Auto-cleanup** - Completed jobs and expired sessions cleaned every hour
+- **Health Check** - `/api/health` endpoint for monitoring
+- **Nextcloud Integration** - Auto-scan files after download, ownership fix
+- **Google Drive Sync** - rclone sync with deletions support
+
 ## Key Design Decisions
 
 - **No external dependencies** - Python stdlib only (http.server, urllib, json, threading)
